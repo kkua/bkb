@@ -20,6 +20,14 @@ fn main() {
         .open_single_dir()
         .show()
         .unwrap();
+    let auto_double = DialogBuilder::message()
+        .set_level(native_dialog::MessageLevel::Info)
+        .set_title("打印参数")
+        .set_text("是否自动双面")
+        .confirm()
+        .show()
+        .unwrap_or(true);
+    println!("自动双面：{}", auto_double);
     let has_cover = DialogBuilder::message()
         .set_level(native_dialog::MessageLevel::Info)
         .set_title("装订参数")
@@ -47,6 +55,7 @@ fn main() {
         sheets_per_booklet: 10,
         has_cover,
         keep_cover,
+        auto_double_side: auto_double,
         ..binding_rule
     }
     .set_output_path(&out_path);

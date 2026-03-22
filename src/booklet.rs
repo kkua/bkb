@@ -10,7 +10,8 @@ pub struct BindingRule {
     pub output_dir: PathBuf,
     /// 每个小册子的A4纸数量（默认10张，即40页）
     pub sheets_per_booklet: usize,
-
+    /// 是否自动双面。若为否则使用手动双面模式，打印时需要注意先偶数页后奇数页（输出文件名已标记好打印顺序，print order先po1后po2）
+    pub auto_double_side: bool,
     /// 装订方式（默认为true:在中间装订）
     pub binding_at_middle: bool,
     // 是否有封面封底（第一页和最后一页）
@@ -33,6 +34,7 @@ impl Default for BindingRule {
             input_path: PathBuf::new(),
             output_dir: PathBuf::new(),
             sheets_per_booklet: 10,
+            auto_double_side: true,
             binding_at_middle: true,
             has_cover: false,
             keep_cover: false,
@@ -178,7 +180,7 @@ pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
             }
         }
         booklet_idx += 1;
-        pdf_creator::create_booklet(
+        pdf_creator::create_booklet_v2(
             src_pdf,
             binding_rule,
             booklet_idx,
