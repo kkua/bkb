@@ -1,0 +1,428 @@
+
+// import { Label } from "../ui/base/label.slint";
+import {
+    HorizontalBox,
+    CheckBox,
+    LineEdit,
+    StandardButton,
+    Button,
+    ListView,
+    TextEdit,
+    VerticalBox,
+    Switch,
+    SpinBox,
+} from "std-widgets.slint";
+import { CreateConfig } from "store.slint";
+import { Palette, StyleMetrics, ProgressIndicator } from "std-widgets.slint";
+import { IconDisplay, IconSet } from "@lucide";
+
+component CreateConfigView {
+    in-out property <CreateConfig> conf;
+    callback send-parent();
+    HorizontalLayout {
+        alignment: space-around;
+        CheckBox {
+            text: "有封面";
+            // init => {
+            //     conf.has-cover = false;
+            // }
+            checked <=> conf.has-cover;
+            toggled => {
+                send-parent();
+            }
+        }
+
+        CheckBox {
+            text: "保留封面";
+            enabled: conf.has-cover;
+            checked <=> conf.keep-cover;
+            // visible: conf.has-cover;
+            toggled => {
+                send-parent();
+            }
+        }
+
+        HorizontalLayout {
+            alignment: start;
+            Text {
+                text: "每册纸张数";
+                vertical-alignment: center;
+            }
+
+            SpinBox {
+                value <=> conf.sheet-per-booklet;
+                minimum: 2;
+                maximum: 30;
+                width: 8rem;
+                edited(value) => {
+                    send-parent();
+                }
+                // init => {
+                //     conf.sheet-per-booklet = 10;
+                // }
+            }
+        }
+
+        CheckBox {
+            text: "中缝装订";
+            checked <=> conf.binding-at-middle;
+            toggled => {
+                send-parent();
+            }
+        }
+
+        CheckBox {
+            text: "自动双面";
+            checked <=> conf.auto-doble-side;
+            toggled => {
+                send-parent();
+            }
+        }
+    }
+}
+
+component TaskView {
+    in-out property <CreateConfig> conf;
+    // changed conf => {
+    // };
+    callback change-pdf();
+    callback change-out-dir();
+    callback open-out-dir();
+    callback start-task();
+    callback update-task(int, CreateConfig);
+    // function update-progess(){
+
+    // }
+
+    public function update-conf(uc: CreateConfig) {
+        self.conf = uc;
+        // conf.src-path = uc.src-path;
+        // conf.out-dir = uc.out-dir;
+        // conf.progress = uc.progress;
+        
+    }
+    HorizontalLayout {
+        @children
+    }
+
+    Rectangle {
+        border-width: 1px;
+        border-color: gray;
+        // background: pink;
+        HorizontalLayout {
+            alignment: stretch;
+            padding: 10px;
+            Switch {
+                init => {
+                    conf.enable = true
+                }
+                checked <=> conf.enable;
+                toggled => {
+                    conf.progress = 0.05;
+                    update-task(conf.idx, conf);
+                }
+            }
+
+            // Button {
+            //     text: "启动";
+            //     enabled: conf.enable;
+            //     clicked => {
+            //         conf.progress = 0.05;
+            //         start-task()
+            //     }
+            // }
+            VerticalLayout {
+
+                alignment: center;
+                IconDisplay {
+                    icon: IconSet.Play;
+                    stroke: conf.progress >= 1.0 ? Palette.accent-foreground : Palette.accent-background;
+                    size: 2rem;
+                    
+                    TouchArea {
+                        enabled: conf.enable;
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => {
+                            conf.progress = 0.05;
+                            start-task()
+                        }
+                    }
+                }
+            }
+            
+
+            VerticalLayout {
+            // padding-left: 6px;
+            alignment: start;
+                spacing: 8px;
+                padding-left: 10px;
+                padding-right: 10px;
+                HorizontalLayout {
+                // Text {
+                //     text: "配置";
+                //     vertical-alignment: center;
+                // }
+
+                CreateConfigView {
+                        conf <=> root.conf;
+                        send-parent() => {
+                            update-task(conf.idx, conf);
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 0.5rem;
+                    alignment: space-around;
+                    property <bool> done;
+                    HorizontalLayout {
+                        Text {
+                            text: "源文件：";
+                            vertical-alignment: center;
+                        }
+
+                        LineEdit {
+                            width: 20rem;
+                            enabled: false;
+                            text: conf.src-path;
+                        }
+
+                        // Button {
+                        //     text: "重选";
+                        //     clicked => {
+                        //         change-pdf();
+                        //     }
+                        // }
+                        IconDisplay {
+                            icon: IconSet.FileSearchCorner;
+                            stroke: Palette.accent-background;
+                            size: 2rem;
+                            TouchArea {
+                                mouse-cursor: MouseCursor.pointer;
+                                clicked => {
+                                    change-pdf();
+                                }
+                            }
+                        }
+                    }
+
+                    HorizontalLayout {
+                        LineEdit {
+                            text <=> conf.out-dir;
+                            width: 15rem;
+                        }
+
+                        // Button {
+                        //     text: "输出文件夹";
+                        //     clicked => {
+                        //         change-out-dir();
+                        //     }
+                        // }
+                        IconDisplay {
+                            icon: IconSet.FolderOutput;
+                            stroke: Palette.accent-background;
+                            size: 2rem;
+                            TouchArea {
+                                mouse-cursor: MouseCursor.pointer;
+                                clicked => {
+                                    change-out-dir();
+                                }
+                            }
+                        }
+                    }
+
+                    // Button {
+                    //     text: "打开输出文件夹";
+                    //     clicked => {
+                    //             open-out-dir();
+                    //         }
+                    // }
+
+                    IconDisplay {
+                        icon: IconSet.FolderOpen;
+                        // stroke: black;
+                        stroke: Palette.accent-background;
+                        size: 2rem;
+                        TouchArea {
+                            mouse-cursor: MouseCursor.pointer;
+                            clicked => {
+                                open-out-dir();
+                            }
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    ProgressIndicator {
+                        progress <=> conf.progress;
+                        init => {
+                            if (conf.progress == 0) {
+                                conf.progress = 0.05;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component App inherits Window {
+    title: "BKB——PDF小册子生成工具";
+    icon: @image-url("res/app.ico");
+    width: 800px;
+    preferred-height: 600px;
+    min-height: 600px;
+    default-font-size: 14px;
+    default-font-family: "Microsoft YaHei";
+    // icon: app-icon;
+    // in property <image> app-icon;
+    in-out property <CreateConfig> template_conf: {
+        has_cover: false,
+        sheet-per-booklet: 10,
+        auto-doble-side: true,
+        binding-at-middle: true
+    };
+    in-out property <[CreateConfig]> task-list: [];
+    in-out property <int> update_task_idx: -1;
+    in-out property <bool> pending: false;
+    // icon: load-app-icon();
+    // in-out property <CreateConfig> item-change-cache;
+    callback add-pdf();
+    callback start-task(int);
+    callback change-pdf(int) -> string;
+    callback open-out-dir(int);
+    callback change-out-dir(int);
+    pure callback load-app-icon() -> image;
+
+// init=> { 
+//     root.icon = load-app-icon();
+// }
+    public function send-update-task(idx: int, uc: CreateConfig) {
+        debug(uc);
+        task-list[idx] = uc;
+        update_task_idx = idx;
+    }
+
+    changed update_task_idx => {
+        debug("App recv update_task", update_task_idx);
+    }
+    VerticalLayout {
+        padding: 6px;
+        alignment: start;
+        HorizontalBox {
+            // alignment: start;
+            Text {
+                text: "默认配置";
+                vertical-alignment: center;
+            }
+
+            CreateConfigView {
+                // horizontal-stretch: 1;
+                conf <=> template_conf;
+            }
+        }
+
+        // 操作队列
+        HorizontalBox {
+            alignment: center;
+            // height: 6rem;
+            // Button {
+            //     text: "添加";
+            //     clicked => {
+            //         debug("添加PDF源文件，可多选");
+            //         add-pdf();
+            //     }
+            // }
+            IconDisplay {
+                icon: IconSet.FilePlus;
+                stroke: Palette.accent-background;
+                size: 2rem;
+                TouchArea {
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => {
+                        debug("添加PDF源文件，可多选");
+                        add-pdf();
+                    }
+                }
+            }
+
+            // Button {
+            //     text: "启动";
+            //     enabled: !pending;
+            //     clicked => {
+            //         pending = true;
+            //         start-task(-1);
+            //     }
+            // }
+            IconDisplay {
+                icon: IconSet.Play;
+                stroke: pending? Palette.accent-foreground :Palette.accent-background;
+                size: 2rem;
+                TouchArea {
+                    mouse-cursor: MouseCursor.pointer;
+                    enabled: !pending;
+                    clicked => {
+                        if (task-list.length <= 0) {
+                            return;
+                        }
+                        pending = true;
+                        start-task(-1);
+                    }
+                }
+            }
+        }
+
+        ListView {
+            height: 100%;
+            // in-out property <int> update_idx <=> root.update_task_idx;
+            
+            for item in task-list: tvl := TaskView {
+                conf: item;
+                update-task(idx, conf) => {
+                    task-list[idx] = conf;
+                }
+                change-pdf => {
+                    self.conf.src-path = change-pdf(item.idx);
+                    // 更新输出目录
+                    self.update-conf(task-list[item.idx]);
+                }
+                change-out-dir => {
+                    change_out_dir(item.idx);
+                    self.update-conf(task-list[item.idx]);
+                }
+                open-out-dir => {
+                    open_out_dir(item.idx);
+                }
+                start-task => {
+                    pending = true;
+                    start-task(item.idx);
+                }
+
+                Timer {
+                    interval: 100ms;
+                    running <=> root.pending;
+                    triggered => {
+                        // debug("pending value:", pending, ", idx:", item.idx);
+                        if (item.idx == update_task_idx) {
+                            let conf = task-list[update_task_idx];
+                            let conf2 = task-list[update_task_idx];
+                            // 此处有概率出现数据竞争问题
+                            update_task_idx = -1;
+                            parent.update-conf(conf);
+                            if (conf2.progress >= 1) {
+                                self.running = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // ListView {
+            // TaskView { }
+            // TaskView { }
+            // TaskView { }
+        // }
+        // Label {text: "默认配置";}
+    }
+}

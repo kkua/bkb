@@ -1,10 +1,15 @@
 use native_dialog::DialogBuilder;
 
 mod booklet;
+mod gui;
 mod pdf_creator;
 mod pdf_render;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    gui::start_gui()
+}
+
+fn start_dialog() {
     let path = DialogBuilder::file()
         // .set_location("~/Desktop")
         .add_filter("PDF", ["pdf"])

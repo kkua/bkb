@@ -1,8 +1,7 @@
-use oxidize_pdf::page;
-
 use crate::{pdf_creator, pdf_render::PdfDocumentHolder};
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct BindingRule {
     /// 输入PDF文件路径
     pub input_path: PathBuf,
@@ -42,6 +41,7 @@ impl Default for BindingRule {
     }
 }
 
+#[allow(dead_code)]
 impl BindingRule {
     pub fn new(input_path: &PathBuf) -> Self {
         Self {
@@ -148,9 +148,9 @@ pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
     let has_cover = binding_rule.has_cover;
     let keep_cover = binding_rule.keep_cover;
     let (mut page_idx, page_count) = if has_cover && !keep_cover {
-        (1u16, src_pdf.get_page_count() - 2)
+        (1, src_pdf.get_page_count() - 2)
     } else {
-        (0u16, src_pdf.get_page_count())
+        (0, src_pdf.get_page_count())
     };
     let booklet_config = calc_booklet_sheets(
         page_count as u32,
@@ -160,7 +160,7 @@ pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
     );
     let mut booklet_idx = 0u16;
 
-    let pages_per_booklet = (booklet_config.booklet_sheets * 4) as u16;
+    let pages_per_booklet = (booklet_config.booklet_sheets * 4) as i32;
     while page_idx < page_count {
         let booklet_start_page = page_idx;
         let mut booklet_end_page = booklet_start_page + pages_per_booklet;
@@ -169,7 +169,7 @@ pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
         }
         let is_last_booklet = booklet_end_page >= page_count;
         if booklet_end_page > page_count {
-            booklet_end_page = page_count + booklet_config.tail_pad_page as u16;
+            booklet_end_page = page_count + booklet_config.tail_pad_page as i32;
         }
         if has_cover && keep_cover {
             if booklet_idx == 0 {
