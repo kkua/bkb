@@ -6,9 +6,7 @@ use std::{
 };
 
 use native_dialog::DialogBuilder;
-use slint::{
-    ComponentHandle, Image, Model, SharedPixelBuffer, SharedString, VecModel, Weak,
-};
+use slint::{ComponentHandle, Image, Model, SharedPixelBuffer, SharedString, VecModel, Weak};
 
 use crate::{
     booklet::{self, BindingRule},
