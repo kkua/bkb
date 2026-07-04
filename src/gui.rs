@@ -5,14 +5,13 @@ use std::{
     time::Duration,
 };
 
+use lopdf::Document;
 use native_dialog::DialogBuilder;
 use slint::{ComponentHandle, Image, Model, SharedPixelBuffer, SharedString, VecModel, Weak};
 
-use crate::{
-    booklet::{self, BindingRule},
-    pdf_render::{PdfDocumentHolder, init_pdfium},
-};
+use crate::booklet::{self, BindingRule};
 slint::include_modules!();
+
 static APP_REF: OnceLock<Weak<App>> = OnceLock::new();
 
 macro_rules! def_cb {
@@ -51,6 +50,7 @@ pub fn bind_all_callback(app: &App) {
     // def_cb!(app, on_add_task, choose_pdf);
     // def_cb!(app, on_clear_queue, cb_clear_queue);
     let _init = APP_REF.set(app.as_weak().clone());
+    // def_cb!(app, on_)
     // println!("APP_REF init {}", _init.is_ok());
     def_cb!(app, on_load_app_icon, on_load_app_icon);
     def_cb!(app, on_add_pdf, on_add_pdf);
@@ -330,8 +330,9 @@ fn create_booklet(ui_ref: &Weak<App>, idx: isize, conf: &CreateConfig) {
     let ui_ref = ui_ref.clone();
 
     // let _r = thread::spawn(move || {
-    let pdfium = init_pdfium();
-    let src_pdf = PdfDocumentHolder::new(&pdfium, &PathBuf::from(src_path), None);
+    // let pdfium = init_pdfium();
+    // let src_pdf = PdfDocumentHolder::new(&pdfium, &PathBuf::from(src_path), None);
+    let src_pdf = Document::load(src_path).unwrap();
     booklet::create_booklet(&src_pdf, &br);
     let _3 = ui_ref.upgrade_in_event_loop(move |ui| {
         let task_list = ui.get_task_list();
@@ -353,7 +354,7 @@ fn create_booklet(ui_ref: &Weak<App>, idx: isize, conf: &CreateConfig) {
     // .join();
 }
 
-fn on_load_app_icon(ui_handle: slint::Weak<App>) -> slint::Image {
+fn on_load_app_icon(_ui_handle: slint::Weak<App>) -> slint::Image {
     // let ui = match ui_handle.upgrade() {
     //     Some(ui) => ui,
     //     None => return, // UI 可能已经被销毁，直接返回

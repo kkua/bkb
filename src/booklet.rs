@@ -1,4 +1,6 @@
-use crate::{pdf_creator, pdf_render::PdfDocumentHolder};
+use lopdf::Document;
+
+use crate::pdf_creator;
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -144,13 +146,14 @@ fn calc_booklet_sheets(
     }
 }
 
-pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
+pub fn create_booklet(src_pdf: &Document, binding_rule: &BindingRule) {
     let has_cover = binding_rule.has_cover;
     let keep_cover = binding_rule.keep_cover;
+    let src_page_cnt = src_pdf.get_pages().len() as i32;
     let (mut page_idx, page_count) = if has_cover && !keep_cover {
-        (1, src_pdf.get_page_count() - 2)
+        (1, src_page_cnt - 2)
     } else {
-        (0, src_pdf.get_page_count())
+        (0, src_page_cnt)
     };
     let booklet_config = calc_booklet_sheets(
         page_count as u32,
@@ -158,7 +161,7 @@ pub fn create_booklet(src_pdf: &PdfDocumentHolder, binding_rule: &BindingRule) {
         has_cover,
         keep_cover,
     );
-    let mut booklet_idx = 0u16;
+    let mut booklet_idx = 0;
 
     let pages_per_booklet = (booklet_config.booklet_sheets * 4) as i32;
     while page_idx < page_count {
