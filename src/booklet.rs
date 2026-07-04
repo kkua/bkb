@@ -183,7 +183,7 @@ pub fn create_booklet(src_pdf: &Document, binding_rule: &BindingRule) {
             }
         }
         booklet_idx += 1;
-        pdf_creator::create_booklet_v2(
+        pdf_creator::do_create_booklet(
             src_pdf,
             binding_rule,
             booklet_idx,

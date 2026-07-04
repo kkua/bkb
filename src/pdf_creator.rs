@@ -1,19 +1,16 @@
-use crate::{
-    booklet::BindingRule,
+use crate::booklet::BindingRule;
+use std::{
+    any::{Any, TypeId},
+    path::Path,
 };
-use std::path::Path;
 
 use lopdf::{
-    Dictionary, Document, Object, ObjectId, Stream,
+    Dictionary, Document,
+    Object::{self, Reference},
+    ObjectId, Stream,
     content::{Content, Operation},
     dictionary,
 };
-// use crate::pdf_render::PdfDocumentHolder;
-// use oxidize_pdf::Document;
-// use oxidize_pdf::Font;
-// use oxidize_pdf::Page;
-// use oxidize_pdf::graphics::LineDashPattern;
-// use pdfium_render::prelude::PdfDocumentMetadataTagType;
 
 /// 创建册子
 ///
@@ -24,7 +21,7 @@ use lopdf::{
 /// * `is_last_booklet` - 是否是最后一册
 /// * `booklet_start_page` - 小册子开始页索引(包含)
 /// * `booklet_end_page` - 小册子结束页索引(不包含)
-pub fn create_booklet_v2(
+pub fn do_create_booklet(
     src_pdf: &Document,
     binding_rule: &BindingRule,
     booklet_num: i32,
@@ -51,7 +48,6 @@ pub fn create_booklet_v2(
     } else {
         len as i32 - 1
     };
-    // let mut high = 1;
     let mut front_doc = create_doc(&src_pdf);
     let mut back_doc = create_doc(&src_pdf);
     let mut booklet_doc = create_doc(&src_pdf);
@@ -76,8 +72,6 @@ pub fn create_booklet_v2(
     while front_idx < len {
         let front_page_pair = sheet_pages_vec.get(front_idx).unwrap();
         let back_page_pair = sheet_pages_vec.get(back_idx as usize).unwrap();
-        // let front_sheet = create_front_sheet(src_pdf, booklet_num, front_page_pair, binding_rule);
-        // let back_sheet = crate_back_sheet(src_pdf, booklet_num, back_page_pair, binding_rule);
         front_idx = front_idx + 2;
         if is_auto_double_side {
             add_page(
@@ -98,8 +92,6 @@ pub fn create_booklet_v2(
                 binding_rule.binding_at_middle,
                 true,
             );
-            // booklet_doc.add_page(front_sheet);
-            // booklet_doc.add_page(back_sheet);
             back_idx = back_idx + 2;
         } else {
             add_page(
@@ -120,8 +112,6 @@ pub fn create_booklet_v2(
                 binding_rule.binding_at_middle,
                 true,
             );
-            // front_doc.add_page(front_sheet);
-            // back_doc.add_page(back_sheet);
             back_idx = back_idx - 2;
         }
     }
@@ -290,7 +280,6 @@ fn calc_page_on_sheet(
     res
 }
 
-
 pub fn save_pdf<P>(doc: &mut Document, dst_page_ids: Vec<ObjectId>, path: P)
 where
     P: AsRef<Path>,
@@ -304,6 +293,7 @@ const A4_W: f32 = 595.0;
 const PAGE_H: f32 = A4_W;
 const PAGE_W: f32 = A4_H;
 const PAGE_W_HALF: f32 = A4_H / 2.0;
+
 pub fn add_page(
     src_doc: &Document,
     dst_doc: &mut Document,
@@ -313,7 +303,6 @@ pub fn add_page(
     binding_at_middle: bool,
     is_sheet_back: bool,
 ) {
-    dbg!(&page_pair);
     let lpage_num = if is_sheet_back {
         page_pair.1
     } else {
@@ -374,7 +363,6 @@ fn build_half_page(
 ) -> Option<ObjectId> {
     let pages = src_doc.get_pages();
     if page_num < 0 || page_num >= pages.len() as i32 {
-        dbg!("page_num out of range");
         return None;
     }
     dbg!(page_num + 1);
@@ -382,8 +370,15 @@ fn build_half_page(
     if let Ok(page_obj) = src_doc.get_object(*page_id) {
         let src_page_dict = page_obj.as_dict().unwrap();
 
+        let media_box_obj = src_page_dict.get(b"MediaBox").unwrap();
+
+        let media_box = match media_box_obj {
+            Reference(ref_id) => src_doc.get_object(*ref_id).unwrap().as_array().unwrap(),
+            Object::Array(_arr) => media_box_obj.as_array().unwrap(),
+            _ => panic!("不支持的对象类型,{:?}", media_box_obj),
+        };
         // 提取尺寸并计算缩放因子（假设源页面等比缩放放入 A4 的一半）
-        let media_box = src_page_dict.get(b"MediaBox").unwrap().as_array().unwrap();
+        // let media_box = src_page_dict.get(b"MediaBox").unwrap().as_array().unwrap();
         let src_width = media_box[2].as_float().unwrap();
         let src_height = media_box[3].as_float().unwrap();
         let scale = (PAGE_W_HALF / src_width).min(PAGE_H / src_height);
@@ -403,12 +398,11 @@ fn build_half_page(
         let space_x = 0f32.max((PAGE_W_HALF - src_width * scale) / 2.0);
 
         // cos(θ) sin(θ) -sin(θ) cos(θ) tx ty cm
-        // a = sx, b = 0, c = 0, d = sy, e = tx, f = ty
+        // a = sx, b , c , d = sy, e = tx, f = ty
         let ctm_sx = if rotate_180 { -scale } else { scale };
         let ctm_b = "0";
         let ctm_c = "0";
         let ctm_sy = if rotate_180 { -scale } else { scale };
-        // let ctm_tx = if left { space_x } else { PAGE_W_HALF + space_x };
         let ctm_tx = if left { space_x } else { PAGE_W_HALF + space_x };
         let ctm_tx = if rotate_180 {
             if left {
@@ -424,12 +418,7 @@ fn build_half_page(
         } else {
             space_y
         };
-        // let ctm_sx = scale;
-        // let ctm_b = 0;
-        // let ctm_c = 0;
-        // let ctm_sy = scale;
-        // let ctm_tx = if left { 0.0 } else { PAGE_W_HALF };
-        // let ctm_ty = 0;
+
         let ctm = format!(
             "{} {} {} {} {} {}",
             ctm_sx, ctm_b, ctm_c, ctm_sy, ctm_tx, ctm_ty
@@ -474,8 +463,6 @@ fn build_half_page(
         safe_stream_bytes.extend_from_slice(b"q\n");
         // 应用缩放与平移矩阵
         safe_stream_bytes.extend_from_slice(format!("{} cm\n", ctm).as_bytes());
-        // safe_stream_bytes
-        //     .extend_from_slice(format!("{} 0 0 {} {} 0 cm\n", scale, scale, 0).as_bytes());
         // 设置裁切路径 (基于 TrimBox 的坐标)
         safe_stream_bytes.extend_from_slice(
             format!("{} {} {} {} re W n\n", trim_x, trim_y, trim_w, trim_h).as_bytes(),
@@ -523,35 +510,35 @@ fn add_page_flow(
     merge_page_resources(&mut merge_content_flow, &mut xobject_dict, left_form);
     merge_page_resources(&mut merge_content_flow, &mut xobject_dict, right_form);
 
-    const dot_wid: f32 = 1.5;
-    const dot_space: f32 = 12.0f32 * 72.0 / 25.4; // 12mm
-    const dot_num: f32 = (PAGE_H / dot_space).floor();
-    const start_y: f32 = (PAGE_H - (dot_space + dot_wid) * dot_num) / 2.0;
+    const DOT_WID: f32 = 1.5;
+    const DOT_SPACE: f32 = 12.0f32 * 72.0 / 25.4; // 12mm
+    const DOT_NUM: f32 = (PAGE_H / DOT_SPACE).floor();
+    const START_Y: f32 = (PAGE_H - (DOT_SPACE + DOT_WID) * DOT_NUM) / 2.0;
     merge_content_flow.extend_from_slice(&[
         // --- 绘制正中间的灰色小圆点虚线 ---
         Operation::new("q", vec![]),     // 1. 保存图形状态
         Operation::new("0.2 G", vec![]), // 2. 设置描边颜色为 50% 灰色
-        Operation::new(&format!("{} w", dot_wid), vec![]), // 3. 设置线宽为 0.5
+        Operation::new(&format!("{} w", DOT_WID), vec![]), // 3. 设置线宽为 0.5
         Operation::new("1 J", vec![]),   // 4. 设置线帽为圆头（Round Cap）
         Operation::new(
             "d",
             vec![
-                // 5. 设置虚线样式 [1 3] 0 d (画1点，空3点)
+                // 设置虚线样式 [0 34] 0 d (画1点，空34点)
                 Object::Array(vec![0.into(), 34.into()]),
                 0.into(),
             ],
         ),
-        Operation::new("m", vec![PAGE_W_HALF.into(), start_y.into()]), // 6. 移动到 (421, 0)
-        Operation::new("l", vec![PAGE_W_HALF.into(), PAGE_H.into()]),  // 7. 画线到 (421, 595)
-        Operation::new("S", vec![]),                                   // 8. 描边
-        Operation::new("Q", vec![]),                                   // 9. 恢复图形状态
+        Operation::new("m", vec![PAGE_W_HALF.into(), START_Y.into()]), // 移动到 (421, 0)
+        Operation::new("l", vec![PAGE_W_HALF.into(), PAGE_H.into()]),  // 画线到 (421, 595)
+        Operation::new("S", vec![]),                                   // 描边
+        Operation::new("Q", vec![]),                                   // 恢复图形状态
     ]);
     if !is_sheet_back {
         merge_content_flow.extend_from_slice(&[
             // 在页面正中心绘制页码数字 ---
             Operation::new("q", vec![]),     // 保存图形状态
             Operation::new("BT", vec![]),    // Begin Text
-            Operation::new("0.4 g", vec![]), // 设置文字颜色为同样的灰色
+            Operation::new("0.4 g", vec![]), // 设置文字颜色为灰色
             Operation::new(
                 "Tf",
                 vec![
@@ -568,9 +555,9 @@ fn add_page_flow(
                     (-1).into(),
                     0.into(),
                     PAGE_W_HALF.into(),
-                    (start_y + (dot_wid + dot_space) * dot_num / 2.0 + dot_space / 3.0).into(),
+                    (START_Y + (DOT_WID + DOT_SPACE) * DOT_NUM / 2.0 + DOT_SPACE / 3.0).into(),
                 ],
-            ), // 移动到页面视觉正中心 (X: 418.5, Y: 291.5)
+            ), // 移动到页面中缝虚线空白处
             Operation::new(
                 "Tj",
                 vec![Object::String(
@@ -647,7 +634,6 @@ fn add_pages_catalog(dst_doc: &mut Document, dst_page_ids: Vec<ObjectId>) {
         .unwrap()
         .as_hashmap_mut()
         .swap_remove(&"Outlines".to_string().into_bytes());
-    let _ = dst_doc.save("260703.pdf").unwrap();
 }
 
 fn merge_page_resources(
@@ -659,12 +645,12 @@ fn merge_page_resources(
         let form_xobject_id = form.0;
         content_flow.extend(form.1);
         let form_xobject_name = format!("bkb_SrcPage_{}", form.2);
-        xobject_dict.as_hashmap_mut().insert(
-            form_xobject_name.into_bytes(),
-            Object::Reference(form_xobject_id),
-        );
-        // xobject_dict.extend(&dictionary! {
-        //     form_xobject_name => Object::Reference(form_xobject_id),
-        // });
+        // xobject_dict.as_hashmap_mut().insert(
+        //     form_xobject_name.into_bytes(),
+        //     Object::Reference(form_xobject_id),
+        // );
+        xobject_dict.extend(&dictionary! {
+            form_xobject_name => Object::Reference(form_xobject_id),
+        });
     }
 }

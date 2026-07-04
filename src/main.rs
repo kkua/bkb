@@ -4,7 +4,6 @@ use native_dialog::DialogBuilder;
 mod booklet;
 mod gui;
 mod pdf_creator;
-// mod pdf_render;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     gui::start_gui()
@@ -66,6 +65,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 //     }
 //     .set_output_path(&out_path);
 //     // let src_pdf = pdf_render::PdfDocumentHolder::new(&pdfium, &input_path, None);
-//     // dbg!(src_pdf.get_page_count());
 //     booklet::create_booklet(&src_pdf, &binding_rule);
 // }
