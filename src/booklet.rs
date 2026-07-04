@@ -126,7 +126,7 @@ fn calc_booklet_sheets(
         // booklet_sheets 一定会小于 paper_count_per_booklet
         booklet_sheets = total / booklet_count / 4;
         // remain_booklet_sheets 一定会小于 booklet_sheets
-        let remain_booklet_sheets = (booklet_sheets * 4 * booklet_count - total) / 4;
+        let remain_booklet_sheets = (total - booklet_sheets * 4 * booklet_count) / 4;
         let booklet_config = BookletConfig {
             booklet_sheets,
             add_sheet_booklet_count: remain_booklet_sheets,
