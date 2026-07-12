@@ -2,6 +2,7 @@
 use native_dialog::DialogBuilder;
 
 mod booklet;
+mod cache;
 mod gui;
 mod pdf_creator;
 

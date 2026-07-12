@@ -1,8 +1,5 @@
-use crate::booklet::BindingRule;
-use std::{
-    any::{Any, TypeId},
-    path::Path,
-};
+use crate::{booklet::BindingRule, cache};
+use std::{path::Path, str::FromStr};
 
 use lopdf::{
     Dictionary, Document,
@@ -31,6 +28,9 @@ pub fn do_create_booklet(
 ) {
     let is_first_booklet = booklet_num == 1;
 
+    if is_first_booklet {
+        cache::clear();
+    }
     let page_count = src_pdf.get_pages().len() as i32;
     let is_auto_double_side = binding_rule.auto_double_side;
     let sheet_pages_vec = calc_page_on_sheet(
@@ -501,6 +501,21 @@ fn build_half_page(
     }
 }
 
+fn parse_page_box_size_vec(str: String) -> Vec<f32> {
+    str.split(",")
+        .map(f32::from_str)
+        .map(|i| i.unwrap_or(0.0))
+        .collect()
+}
+
+fn page_size_to_str(box_size: &Vec<f32>) -> String {
+    box_size
+        .iter()
+        .map(f32::to_string)
+        .collect::<Vec<String>>()
+        .join(",")
+}
+
 fn get_page_box(page_dict: &Dictionary, doc: &Document, box_key: &str) -> Option<Vec<f32>> {
     fn get_box(dict: &Dictionary, doc: &Document, box_key: &str) -> Option<Vec<f32>> {
         let obj = dict.get(box_key.as_bytes());
@@ -522,7 +537,8 @@ fn get_page_box(page_dict: &Dictionary, doc: &Document, box_key: &str) -> Option
             ]);
         }
         return None;
-    };
+    }
+
     if let Some(obj) = get_box(page_dict, doc, box_key) {
         // let media_box = match obj {
         //     Reference(ref_id) => doc.get_object(*ref_id).unwrap().as_array().unwrap(),
@@ -533,6 +549,13 @@ fn get_page_box(page_dict: &Dictionary, doc: &Document, box_key: &str) -> Option
         Some(obj)
     } else {
         // 尝试从父级 Pages 节点继承
+        if let Some(box_rect_str) = cache::get_data::<String>(box_key) {
+            if box_rect_str.is_empty() {
+                return None;
+            }
+            return Some(parse_page_box_size_vec(box_rect_str));
+        }
+
         fn get_box_from_parent(
             dict: &Dictionary,
             doc: &Document,
@@ -541,17 +564,18 @@ fn get_page_box(page_dict: &Dictionary, doc: &Document, box_key: &str) -> Option
             if let Ok(parent_ref) = dict.get(b"Parent") {
                 if let Ok(parent_dict) = doc.get_object(parent_ref.as_reference().unwrap()) {
                     let dict = parent_dict.as_dict().unwrap();
-                    let box_size = get_box(dict, doc, box_key);
-                    if box_size.is_none() {
-                        return get_box_from_parent(dict, doc, box_key);
+                    if let Some(box_size) = get_box(dict, doc, box_key) {
+                        cache::add_data(box_key, page_size_to_str(box_size.as_ref()).as_str());
+                        return Some(box_size);
                     } else {
-                        // todo 可优化： 缓存该值，后续直接读缓存
-                        return box_size;
+                        return get_box_from_parent(dict, doc, box_key);
                     }
                 } else {
+                    cache::add_data(box_key, "");
                     None
                 }
             } else {
+                cache::add_data(box_key, "");
                 None
             }
         }

@@ -1,6 +1,6 @@
 [package]
 name = "bkb"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 description = "Booklet Builder"
 
@@ -10,6 +10,7 @@ description = "Booklet Builder"
 # # pdfium-auto = {version="0.3.0", features=[]}
 image = "0.25"
 native-dialog = {version = "0.9.6", features = ["windows_dpi_awareness", "windows_visual_styles"]}
+# timed-map= "1.7"
 # webbrowser = "1.2.0"
 # argh = "0.1.19"
 # lexopt = "0.3.2"

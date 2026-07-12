@@ -372,9 +372,9 @@ fn get_app_icon() -> Option<slint::Image> {
     // IcoDecoder::new(BufReader::from(icon_data)).unwrap();
     if let Ok(img) = image::load_from_memory_with_format(icon_data, image::ImageFormat::Ico) {
         let rgba = img.to_rgba8();
-        img.save("debug_icon_check.png").unwrap();
+        // img.save("debug_icon_check.png").unwrap();
         let (width, height) = rgba.dimensions();
-        println!("图标尺寸: {}x{}", width, height);
+        // println!("图标尺寸: {}x{}", width, height);
         let buf = SharedPixelBuffer::clone_from_slice(&rgba, width, height);
         let slint_image = Image::from_rgba8(buf);
         println!("get_app_icon");

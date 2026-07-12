@@ -99,7 +99,7 @@ component TaskView {
         // conf.src-path = uc.src-path;
         // conf.out-dir = uc.out-dir;
         // conf.progress = uc.progress;
-        
+
     }
     HorizontalLayout {
         @children
@@ -138,7 +138,7 @@ component TaskView {
                     icon: IconSet.Play;
                     stroke: conf.progress >= 1.0 ? Palette.accent-foreground : Palette.accent-background;
                     size: 2rem;
-                    
+
                     TouchArea {
                         enabled: conf.enable;
                         mouse-cursor: MouseCursor.pointer;
@@ -150,7 +150,7 @@ component TaskView {
                     Tooltip { text: @markdown("启动"); }
                 }
             }
-            
+
 
             VerticalLayout {
             // padding-left: 6px;
@@ -230,7 +230,7 @@ component TaskView {
                                     change-out-dir();
                                 }
                             }
-                            Tooltip { text: @markdown("选择输出文件夹"); }
+                            Tooltip { text: @markdown("更改输出文件夹"); }
                         }
                     }
 
@@ -274,6 +274,7 @@ component TaskView {
 export component App inherits Window {
     title: "BKB——PDF小册子生成工具";
     // icon: @image-url("res/app.ico");
+    icon: load-app-icon();
     width: 800px;
     preferred-height: 600px;
     min-height: 600px;
@@ -290,7 +291,7 @@ export component App inherits Window {
     in-out property <[CreateConfig]> task-list: [];
     in-out property <int> update_task_idx: -1;
     in-out property <bool> pending: false;
-    icon: load-app-icon();
+    // in property <image> icon;
     // in-out property <CreateConfig> item-change-cache;
     callback add-pdf();
     callback start-task(int);
@@ -299,9 +300,6 @@ export component App inherits Window {
     callback change-out-dir(int);
     pure callback load-app-icon() -> image;
 
-// init=> { 
-//     root.icon = load-app-icon();
-// }
     public function send-update-task(idx: int, uc: CreateConfig) {
         debug(uc);
         task-list[idx] = uc;
@@ -386,7 +384,7 @@ export component App inherits Window {
         ListView {
             height: 100%;
             // in-out property <int> update_idx <=> root.update_task_idx;
-            
+
             for item in task-list: tvl := TaskView {
                 conf: item;
                 update-task(idx, conf) => {
