@@ -293,6 +293,15 @@ const A4_W: f32 = 595.0;
 const PAGE_H: f32 = A4_W;
 const PAGE_W: f32 = A4_H;
 const PAGE_W_HALF: f32 = A4_H / 2.0;
+const MM_2_PT: f32 = 1.0 * 72.0 / 25.4;
+const MARGIN_X: f32 = MM_2_PT * 2.0;
+const PRINT_BOX_W: f32 = PAGE_W_HALF - MARGIN_X * 2.0;
+const PRINT_BOX_H: f32 = PAGE_H * PRINT_BOX_W / PAGE_W_HALF;
+const MARGIN_Y: f32 = (PAGE_H - PRINT_BOX_H) / 2.0;
+// const L_BOX_X: f32 = MM_2_PT;
+// const L_BOX_Y: f32 = PAGE_H - PADDING_TB;
+// const R_BOX_X: f32 = PAGE_W_HALF + PADDING_LR;
+// const R_BOX_Y: f32 = L_BOX_Y;
 
 pub fn add_page(
     src_doc: &Document,
@@ -384,7 +393,7 @@ fn build_half_page(
         let media_box = get_page_box(src_page_dict, src_doc, "MediaBox").unwrap();
         let src_width = *media_box.get(2).unwrap();
         let src_height = *media_box.get(3).unwrap();
-        let scale = (PAGE_W_HALF / src_width).min(PAGE_H / src_height);
+        let scale = (PRINT_BOX_W / src_width).min(PRINT_BOX_H / src_height);
 
         // 提取 TrimBox，如果没有则回退到 MediaBox
         // let trim_box = match src_page_dict.get(b"TrimBox").and_then(|v| v.as_array()) {
@@ -401,8 +410,8 @@ fn build_half_page(
         let trim_w = *trim_box.get(2).unwrap_or(&src_width) - trim_x;
         let trim_h = *trim_box.get(3).unwrap_or(&src_height) - trim_y;
 
-        let space_y = 0f32.max((PAGE_H - src_height * scale) / 2.0);
-        let space_x = 0f32.max((PAGE_W_HALF - src_width * scale) / 2.0);
+        let space_y = 0f32.max((PRINT_BOX_H - src_height * scale) / 2.0);
+        let space_x = 0f32.max((PRINT_BOX_W - src_width * scale) / 2.0);
 
         // cos(θ) sin(θ) -sin(θ) cos(θ) tx ty cm
         // a = sx, b , c , d = sy, e = tx, f = ty
@@ -410,20 +419,24 @@ fn build_half_page(
         let ctm_b = "0";
         let ctm_c = "0";
         let ctm_sy = if rotate_180 { -scale } else { scale };
-        let ctm_tx = if left { space_x } else { PAGE_W_HALF + space_x };
+        let ctm_tx = if left {
+            space_x + MARGIN_X
+        } else {
+            PAGE_W_HALF + MARGIN_X + space_x
+        };
         let ctm_tx = if rotate_180 {
             if left {
-                PAGE_W_HALF + space_x
+                PRINT_BOX_W + MARGIN_X + space_x
             } else {
-                PAGE_W - 2.0 * space_x
+                PRINT_BOX_W + PAGE_W_HALF + MARGIN_X + space_x
             }
         } else {
             ctm_tx
         };
         let ctm_ty = if rotate_180 {
-            PAGE_H - space_y
+            PAGE_H - MARGIN_Y - space_y
         } else {
-            space_y
+            MARGIN_Y + space_y
         };
 
         let ctm = format!(
@@ -489,7 +502,7 @@ fn build_half_page(
         let form_xobject_id = dst_doc.add_object(Object::Stream(form_stream));
 
         // 构建目标页面的内容流
-        let form_xobject_name = format!("bkb_SrcPage_{}", page_num);
+        let form_xobject_name = format!("_bkb_op_{}", page_num);
         content_flow.extend(vec![
             Operation::new("q", vec![]),
             Operation::new("Do", vec![Object::Name(form_xobject_name.into())]), // 描边
@@ -601,15 +614,15 @@ fn add_page_flow(
     merge_page_resources(&mut merge_content_flow, &mut xobject_dict, right_form);
 
     const DOT_WID: f32 = 1.5;
-    const DOT_SPACE: f32 = 12.0f32 * 72.0 / 25.4; // 12mm
+    const DOT_SPACE: f32 = 12.0 * MM_2_PT; // 12mm
     const DOT_NUM: f32 = (PAGE_H / DOT_SPACE).floor();
     const START_Y: f32 = (PAGE_H - (DOT_SPACE + DOT_WID) * DOT_NUM) / 2.0;
     merge_content_flow.extend_from_slice(&[
         // --- 绘制正中间的灰色小圆点虚线 ---
-        Operation::new("q", vec![]),     // 1. 保存图形状态
-        Operation::new("0.2 G", vec![]), // 2. 设置描边颜色为 50% 灰色
-        Operation::new(&format!("{} w", DOT_WID), vec![]), // 3. 设置线宽为 0.5
-        Operation::new("1 J", vec![]),   // 4. 设置线帽为圆头（Round Cap）
+        Operation::new("q", vec![]),                       // 保存图形状态
+        Operation::new("0.8 G", vec![]), // 设置描边灰度为0.8，取值范围0~1.0数字越大越浅
+        Operation::new(&format!("{} w", DOT_WID), vec![]), // 设置线宽
+        Operation::new("1 J", vec![]),   // 设置线帽为圆头（Round Cap）
         Operation::new(
             "d",
             vec![
@@ -628,7 +641,7 @@ fn add_page_flow(
             // 在页面正中心绘制页码数字 ---
             Operation::new("q", vec![]),     // 保存图形状态
             Operation::new("BT", vec![]),    // Begin Text
-            Operation::new("0.4 g", vec![]), // 设置文字颜色为灰色
+            Operation::new("0.7 g", vec![]), // 设置文字颜色为浅灰色
             Operation::new(
                 "Tf",
                 vec![
@@ -669,7 +682,7 @@ fn add_page_flow(
     let resources = dictionary! {
         "XObject" => xobject_dict,
         "Font" => dictionary! {
-            "bkb_F1" => dictionary! {
+            "_bkb_F1" => dictionary! {
                 "Type" => "Font",
                 "Subtype" => "Type1",
                 "BaseFont" => "Helvetica", // PDF 内置标准字体，无需嵌入文件
@@ -734,7 +747,7 @@ fn merge_page_resources(
     if let Some(form) = form_obj {
         let form_xobject_id = form.0;
         content_flow.extend(form.1);
-        let form_xobject_name = format!("bkb_SrcPage_{}", form.2);
+        let form_xobject_name = format!("_bkb_op_{}", form.2);
         // xobject_dict.as_hashmap_mut().insert(
         //     form_xobject_name.into_bytes(),
         //     Object::Reference(form_xobject_id),
