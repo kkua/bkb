@@ -1,5 +1,3 @@
-
-// import { Label } from "../ui/base/label.slint";
 import {
     HorizontalBox,
     CheckBox,
@@ -83,23 +81,17 @@ component CreateConfigView {
 
 component TaskView {
     in-out property <CreateConfig> conf;
-    // changed conf => {
-    // };
     callback change-pdf();
     callback change-out-dir();
     callback open-out-dir();
     callback start-task();
     callback update-task(int, CreateConfig);
-    // function update-progess(){
-
-    // }
 
     public function update-conf(uc: CreateConfig) {
         self.conf = uc;
         // conf.src-path = uc.src-path;
         // conf.out-dir = uc.out-dir;
         // conf.progress = uc.progress;
-
     }
     HorizontalLayout {
         @children
@@ -234,13 +226,6 @@ component TaskView {
                         }
                     }
 
-                    // Button {
-                    //     text: "打开输出文件夹";
-                    //     clicked => {
-                    //             open-out-dir();
-                    //         }
-                    // }
-
                     IconDisplay {
                         icon: IconSet.FolderOpen;
                         // stroke: black;
@@ -289,10 +274,9 @@ export component App inherits Window {
         binding-at-middle: true
     };
     in-out property <[CreateConfig]> task-list: [];
-    in-out property <int> update_task_idx: -1;
+    // in-out property <int> update_task_idx: -1;
     in-out property <bool> pending: false;
     // in property <image> icon;
-    // in-out property <CreateConfig> item-change-cache;
     callback add-pdf();
     callback start-task(int);
     callback change-pdf(int) -> string;
@@ -300,15 +284,6 @@ export component App inherits Window {
     callback change-out-dir(int);
     pure callback load-app-icon() -> image;
 
-    public function send-update-task(idx: int, uc: CreateConfig) {
-        debug(uc);
-        task-list[idx] = uc;
-        update_task_idx = idx;
-    }
-
-    changed update_task_idx => {
-        debug("App recv update_task", update_task_idx);
-    }
     VerticalLayout {
         padding: 6px;
         alignment: start;
@@ -352,26 +327,18 @@ export component App inherits Window {
                 }
             }
 
-            // Button {
-            //     text: "启动";
-            //     enabled: !pending;
-            //     clicked => {
-            //         pending = true;
-            //         start-task(-1);
-            //     }
-            // }
             IconDisplay {
                 icon: IconSet.Play;
                 stroke: pending? Palette.accent-foreground :Palette.accent-background;
                 size: 2rem;
                 TouchArea {
                     mouse-cursor: MouseCursor.pointer;
-                    enabled: !pending;
+                    // enabled: !pending;
                     clicked => {
                         if (task-list.length <= 0) {
                             return;
                         }
-                        pending = true;
+                        // pending = true;
                         start-task(-1);
                     }
                 }
@@ -386,7 +353,7 @@ export component App inherits Window {
             // in-out property <int> update_idx <=> root.update_task_idx;
 
             for item in task-list: tvl := TaskView {
-                conf: item;
+                conf <=> item;
                 update-task(idx, conf) => {
                     task-list[idx] = conf;
                 }
@@ -407,30 +374,25 @@ export component App inherits Window {
                     start-task(item.idx);
                 }
 
-                Timer {
-                    interval: 100ms;
-                    running <=> root.pending;
-                    triggered => {
-                        // debug("pending value:", pending, ", idx:", item.idx);
-                        if (item.idx == update_task_idx) {
-                            let conf = task-list[update_task_idx];
-                            let conf2 = task-list[update_task_idx];
-                            // 此处有概率出现数据竞争问题
-                            update_task_idx = -1;
-                            parent.update-conf(conf);
-                            if (conf2.progress >= 1) {
-                                self.running = false;
-                            }
-                        }
-                    }
-                }
+                // Timer {
+                //     interval: 100ms;
+                //     running <=> root.pending;
+                //     triggered => {
+                //         // debug("pending value:", pending, ", idx:", item.idx);
+                //         if (item.idx == update_task_idx) {
+                //             let conf = task-list[update_task_idx];
+                //             let conf2 = task-list[update_task_idx];
+                //             // 此处有概率出现数据竞争问题
+                //             update_task_idx = -1;
+                //             parent.update-conf(conf);
+                //             if (conf2.progress >= 1) {
+                //                 self.running = false;
+                //             }
+                //         }
+                //     }
+                // }
             }
         }
-        // ListView {
-            // TaskView { }
-            // TaskView { }
-            // TaskView { }
-        // }
-        // Label {text: "默认配置";}
+
     }
 }

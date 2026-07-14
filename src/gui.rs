@@ -236,7 +236,6 @@ fn on_change_out_dir(ui_handle: slint::Weak<App>, idx: i32) {
         if let Some(conf) = model.row_data(idx as usize) {
             let dir = DialogBuilder::file()
                 // .set_location("~/Desktop")
-                // .add_filter("PDF", ["pdf"])
                 .set_title("选择输出目录")
                 .open_single_dir()
                 .show()
@@ -278,7 +277,7 @@ fn send_update_task(idx: isize, conf: CreateConfig) {
             if let Some(model) = task_list.as_any().downcast_ref::<VecModel<CreateConfig>>() {
                 // model.row_data_tracked(idx as usize);
                 model.set_row_data(idx as usize, conf.clone());
-                ui.set_update_task_idx(idx as i32);
+                // ui.set_update_task_idx(idx as i32);
                 // ui.invoke_send_update_task(idx as i32, conf);
                 ui.window().request_redraw();
                 // if let Some(row) = model.row_data(idx as usize) {
@@ -332,26 +331,36 @@ fn create_booklet(ui_ref: &Weak<App>, idx: isize, conf: &CreateConfig) {
     // let _r = thread::spawn(move || {
     // let pdfium = init_pdfium();
     // let src_pdf = PdfDocumentHolder::new(&pdfium, &PathBuf::from(src_path), None);
-    let src_pdf = Document::load(src_path).unwrap();
-    booklet::create_booklet(&src_pdf, &br);
-    let _3 = ui_ref.upgrade_in_event_loop(move |ui| {
-        let task_list = ui.get_task_list();
-        if let Some(model) = task_list.as_any().downcast_ref::<VecModel<CreateConfig>>() {
-            if let Some(row) = model.row_data(idx as usize) {
-                let new_conf = CreateConfig {
-                    progress: 1.0f32,
-                    enable: false,
-                    ..row
-                };
-                // send_update_task(idx, new_conf);
-                model.set_row_data(idx as usize, new_conf.clone());
-                // ui.invoke_send_update_task(idx as i32, new_conf);
-                ui.set_update_task_idx(idx as i32);
-            }
+    // if let Ok(src_pdf) = Document::load(src_path) {
+    //     booklet::create_booklet(&src_pdf, &br);
+    // } else {
+    //     println!("", )
+    // }
+
+    match Document::load(src_path) {
+        Ok(src_pdf) => {
+            booklet::create_booklet(&src_pdf, &br);
+            let _3 = ui_ref.upgrade_in_event_loop(move |ui| {
+                let task_list = ui.get_task_list();
+                if let Some(model) = task_list.as_any().downcast_ref::<VecModel<CreateConfig>>() {
+                    if let Some(row) = model.row_data(idx as usize) {
+                        let new_conf = CreateConfig {
+                            progress: 1.0f32,
+                            enable: false,
+                            ..row
+                        };
+                        // send_update_task(idx, new_conf);
+                        model.set_row_data(idx as usize, new_conf.clone());
+                        // ui.invoke_send_update_task(idx as i32, new_conf);
+                        // ui.set_update_task_idx(idx as i32);
+                    }
+                }
+            });
         }
-    });
-    // })
-    // .join();
+        Err(e) => {
+            eprintln!("加载PDF出错, {}, {:?}", conf.src_path.to_string(), e);
+        }
+    }
 }
 
 fn on_load_app_icon(_ui_handle: slint::Weak<App>) -> slint::Image {
