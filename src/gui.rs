@@ -36,10 +36,6 @@ macro_rules! def_cb {
 
 pub fn start_gui() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new()?;
-
-    // if let Some(img) = get_app_icon() {
-    //     app.set_app_icon(img);
-    // }
     bind_all_callback(&app);
     app.run()?;
     Ok(())
@@ -50,28 +46,13 @@ pub fn bind_all_callback(app: &App) {
     // def_cb!(app, on_add_task, choose_pdf);
     // def_cb!(app, on_clear_queue, cb_clear_queue);
     let _init = APP_REF.set(app.as_weak().clone());
-    // def_cb!(app, on_)
-    // println!("APP_REF init {}", _init.is_ok());
     def_cb!(app, on_load_app_icon, on_load_app_icon);
     def_cb!(app, on_add_pdf, on_add_pdf);
     def_cb!(app, on_change_pdf, on_change_pdf, idx);
     def_cb!(app, on_change_out_dir, on_change_out_dir, idx);
     def_cb!(app, on_start_task, on_start_task, idx);
     def_cb!(app, on_open_out_dir, on_open_out_dir, idx);
-    // def_cb!(app, on_update_task, on_update_task, idx, conf);
 }
-
-// fn choose_pdf(app_ref: Weak<App>) {
-//     if let Some(app) = app_ref.upgrade() {
-//         let tq = app.get_task_queue();
-//         if let Some(model) =tq.as_any().downcast_ref::<VecModel<AppRowObj>>() {
-//             // model.push(AppRowObj{model., shared});
-//             let idx = model.row_count() as i32;
-//             let row = AppRowObj{idx,path: SharedString::new()};
-//             model.push(row);
-//         }
-//     }
-// }
 
 fn on_add_pdf(ui_handle: slint::Weak<App>) {
     // 尝试提升弱引用为强引用
@@ -80,7 +61,6 @@ fn on_add_pdf(ui_handle: slint::Weak<App>) {
         None => return, // UI 可能已经被销毁，直接返回
     };
     let path_vec = DialogBuilder::file()
-        // .set_location("~/Desktop")
         .add_filter("PDF", ["pdf"])
         .set_title("选择源文件")
         .open_multiple_file()
@@ -104,11 +84,8 @@ fn on_add_pdf(ui_handle: slint::Weak<App>) {
                 ..template_conf
             };
             model.push(cf);
-            //    CreateConfig
         }
     }
-
-    // ui.set_task_queue(ModelRc::from([]));
 }
 
 fn on_change_pdf(ui_handle: slint::Weak<App>, idx: i32) -> SharedString {
@@ -146,7 +123,6 @@ fn on_change_pdf(ui_handle: slint::Weak<App>, idx: i32) -> SharedString {
                     // progress: 1.0f32,
                     ..conf
                 };
-                // send_update_task(idx, conf);
 
                 model.set_row_data(idx as usize, new_conf);
                 return SharedString::from(pdf_path.to_string_lossy().to_string());
@@ -156,7 +132,6 @@ fn on_change_pdf(ui_handle: slint::Weak<App>, idx: i32) -> SharedString {
         } else {
             return SharedString::new();
         }
-        // return SharedString::from(pdf_path.to_string_lossy().to_string());
     } else {
         return SharedString::new();
     }
@@ -189,17 +164,10 @@ fn on_start_task(ui_handle: slint::Weak<App>, idx: i32) {
                     };
                     model.set_row_data(i as usize, new_conf);
                     tasks.push(conf);
-                    // let ui_ref = ui_ref.clone();
-                    // let _ = thread::Builder::new().spawn(move || {
-                    //     create_booklet(&ui_ref, i, &conf);
-                    // });
                 }
             }
         } else {
             if let Some(conf) = model.row_data(idx as usize) {
-                // let _ = thread::Builder::new().spawn(move || {
-                //     create_booklet(&ui_ref, idx, &conf);
-                // });
                 let new_conf = CreateConfig {
                     progress: 0.0f32,
                     ..conf.clone()
@@ -209,19 +177,6 @@ fn on_start_task(ui_handle: slint::Weak<App>, idx: i32) {
             }
         }
         batch_create_booklet(&ui_ref, tasks);
-    }
-}
-
-fn on_update_task(ui_handle: slint::Weak<App>, idx: i32, conf: CreateConfig) {
-    let idx = idx as isize;
-    // let ui_ref = ui_handle.clone();
-    let ui = match ui_handle.upgrade() {
-        Some(ui) => ui,
-        None => return, // UI 可能已经被销毁，直接返回
-    };
-    let task_list = ui.get_task_list();
-    if let Some(model) = task_list.as_any().downcast_ref::<VecModel<CreateConfig>>() {
-        model.set_row_data(idx as usize, conf);
     }
 }
 
@@ -268,31 +223,6 @@ fn on_open_out_dir(ui_handle: slint::Weak<App>, idx: i32) {
     }
 }
 
-fn send_update_task(idx: isize, conf: CreateConfig) {
-    println!("call send_update_task");
-    // let idx = idx as isize;
-    if let Some(ui_ref) = APP_REF.get() {
-        let _3 = ui_ref.upgrade_in_event_loop(move |ui| {
-            let task_list = ui.get_task_list();
-            if let Some(model) = task_list.as_any().downcast_ref::<VecModel<CreateConfig>>() {
-                // model.row_data_tracked(idx as usize);
-                model.set_row_data(idx as usize, conf.clone());
-                // ui.set_update_task_idx(idx as i32);
-                // ui.invoke_send_update_task(idx as i32, conf);
-                ui.window().request_redraw();
-                // if let Some(row) = model.row_data(idx as usize) {
-                //         let new_conf = CreateConfig {
-                //         progress: 1.0f32,
-                //         ..row
-                //     };
-                // }
-            }
-        });
-    } else {
-        println!("APP_REF is None");
-    }
-}
-
 fn batch_create_booklet(ui_ref: &Weak<App>, tasks: Vec<CreateConfig>) {
     let ui_ref = ui_ref.clone();
     let _ = thread::Builder::new().spawn(move || {
@@ -300,7 +230,6 @@ fn batch_create_booklet(ui_ref: &Weak<App>, tasks: Vec<CreateConfig>) {
             let ui_ref = ui_ref.clone();
             let idx = conf.idx as isize;
             create_booklet(&ui_ref.clone(), idx, &conf);
-            // ui.set_update_task_idx(conf.idx);
         }
         thread::sleep(Duration::from_millis(150));
         let _ = ui_ref.clone().upgrade_in_event_loop(move |ui| {
@@ -328,15 +257,6 @@ fn create_booklet(ui_ref: &Weak<App>, idx: isize, conf: &CreateConfig) {
 
     let ui_ref = ui_ref.clone();
 
-    // let _r = thread::spawn(move || {
-    // let pdfium = init_pdfium();
-    // let src_pdf = PdfDocumentHolder::new(&pdfium, &PathBuf::from(src_path), None);
-    // if let Ok(src_pdf) = Document::load(src_path) {
-    //     booklet::create_booklet(&src_pdf, &br);
-    // } else {
-    //     println!("", )
-    // }
-
     match Document::load(src_path) {
         Ok(src_pdf) => {
             booklet::create_booklet(&src_pdf, &br);
@@ -349,10 +269,7 @@ fn create_booklet(ui_ref: &Weak<App>, idx: isize, conf: &CreateConfig) {
                             enable: false,
                             ..row
                         };
-                        // send_update_task(idx, new_conf);
                         model.set_row_data(idx as usize, new_conf.clone());
-                        // ui.invoke_send_update_task(idx as i32, new_conf);
-                        // ui.set_update_task_idx(idx as i32);
                     }
                 }
             });

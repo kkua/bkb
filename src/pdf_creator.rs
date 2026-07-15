@@ -378,33 +378,13 @@ fn build_half_page(
     let page_id = pages.get(&((page_num + 1) as u32)).unwrap();
     if let Ok(page_obj) = src_doc.get_object(*page_id) {
         let src_page_dict = page_obj.as_dict().unwrap();
-
-        // let media_box_obj = src_page_dict.get(b"MediaBox").unwrap();
-
-        // let media_box = match media_box_obj {
-        //     Reference(ref_id) => src_doc.get_object(*ref_id).unwrap().as_array().unwrap(),
-        //     Object::Array(_arr) => media_box_obj.as_array().unwrap(),
-        //     _ => panic!("不支持的对象类型,{:?}", media_box_obj),
-        // };
-        // 提取尺寸并计算缩放因子（假设源页面等比缩放放入 A4 的一半）
-        // let media_box = src_page_dict.get(b"MediaBox").unwrap().as_array().unwrap();
-        // let src_width = media_box[2].as_float().unwrap();
-        // let src_height = media_box[3].as_float().unwrap();
         let media_box = get_page_box(src_page_dict, src_doc, "MediaBox").unwrap();
         let src_width = *media_box.get(2).unwrap();
         let src_height = *media_box.get(3).unwrap();
         let scale = (PRINT_BOX_W / src_width).min(PRINT_BOX_H / src_height);
 
         // 提取 TrimBox，如果没有则回退到 MediaBox
-        // let trim_box = match src_page_dict.get(b"TrimBox").and_then(|v| v.as_array()) {
-        //     Ok(arr) => arr,
-        //     Err(_) => media_box, // 如果源文档没有 TrimBox，则使用 MediaBox 作为裁切边界
-        // };
         let trim_box = get_page_box(src_page_dict, src_doc, "TrimBox").unwrap_or(media_box);
-        // let trim_x = trim_box[0].as_float().unwrap_or(0.0);
-        // let trim_y = trim_box[1].as_float().unwrap_or(0.0);
-        // let trim_w = trim_box[2].as_float().unwrap_or(src_width) - trim_x;
-        // let trim_h = trim_box[3].as_float().unwrap_or(src_height) - trim_y;
         let trim_x = *trim_box.get(0).unwrap_or(&0.0);
         let trim_y = *trim_box.get(1).unwrap_or(&0.0);
         let trim_w = *trim_box.get(2).unwrap_or(&src_width) - trim_x;
@@ -553,12 +533,6 @@ fn get_page_box(page_dict: &Dictionary, doc: &Document, box_key: &str) -> Option
     }
 
     if let Some(obj) = get_box(page_dict, doc, box_key) {
-        // let media_box = match obj {
-        //     Reference(ref_id) => doc.get_object(*ref_id).unwrap().as_array().unwrap(),
-        //     Object::Array(_arr) => obj.as_array().unwrap(),
-        //     _ => panic!("不支持的对象类型,{:?}", obj),
-        // };
-        // media_box
         Some(obj)
     } else {
         // 尝试从父级 Pages 节点继承
@@ -747,7 +721,7 @@ fn merge_page_resources(
     if let Some(form) = form_obj {
         let form_xobject_id = form.0;
         content_flow.extend(form.1);
-        let form_xobject_name = format!("_bkb_op_{}", form.2);
+        let form_xobject_name = format!("_bkb_op_{}", form.2); // op : origin page
         // xobject_dict.as_hashmap_mut().insert(
         //     form_xobject_name.into_bytes(),
         //     Object::Reference(form_xobject_id),
