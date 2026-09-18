@@ -50,7 +50,7 @@ component CreateConfigView {
             SpinBox {
                 value <=> conf.sheet-per-booklet;
                 minimum: 2;
-                maximum: 30;
+                maximum: 99;
                 width: 8rem;
                 edited(value) => {
                     send-parent();
@@ -257,7 +257,7 @@ component TaskView {
 }
 
 export component App inherits Window {
-    title: "BKB——PDF小册子生成工具";
+    title: "PDF小册子生成工具";
     width: 800px;
     preferred-height: 600px;
     min-height: 600px;

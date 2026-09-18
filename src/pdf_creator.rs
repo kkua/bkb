@@ -483,7 +483,7 @@ fn build_half_page(
         let form_xobject_id = dst_doc.add_object(Object::Stream(form_stream));
 
         // 构建目标页面的内容流
-        let form_xobject_name = format!("_bkb_op_{}", page_num);
+        let form_xobject_name = format!("_bk_op_{}", page_num);
         content_flow.extend(vec![
             Operation::new("q", vec![]),
             Operation::new("Do", vec![Object::Name(form_xobject_name.into())]), // 描边
@@ -639,7 +639,7 @@ fn add_page_flow(
             "Tf",
             vec![
                 // 设置字体和大小 (使用内置的 Helvetica)
-                Object::Name("_bkb_F1".into()),
+                Object::Name("_bk_F1".into()),
                 5.into(),
             ],
         ),
@@ -669,7 +669,7 @@ fn add_page_flow(
     let resources = dictionary! {
         "XObject" => xobject_dict,
         "Font" => dictionary! {
-            "_bkb_F1" => dictionary! {
+            "_bk_F1" => dictionary! {
                 "Type" => "Font",
                 "Subtype" => "Type1",
                 "BaseFont" => "Courier", // PDF 内置标准字体，无需嵌入文件
@@ -734,7 +734,7 @@ fn merge_page_resources(
     if let Some(form) = form_obj {
         let form_xobject_id = form.0;
         content_flow.extend(form.1);
-        let form_xobject_name = format!("_bkb_op_{}", form.2); // op : origin page
+        let form_xobject_name = format!("_bk_op_{}", form.2); // op : origin page
         // xobject_dict.as_hashmap_mut().insert(
         //     form_xobject_name.into_bytes(),
         //     Object::Reference(form_xobject_id),

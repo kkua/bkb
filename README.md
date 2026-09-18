@@ -1,4 +1,4 @@
-# BKB - Booklet Builder
+# pdf-booklet-maker
 
 一个用于将大型PDF文件拆分为多个小册子（booklet）基于Rust的工具。
 ## 功能
