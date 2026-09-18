@@ -1,22 +1,21 @@
 [package]
 name = "bkb"
-version = "1.0.6"
+version = "1.0.7"
 edition = "2024"
 description = "Booklet Builder"
 
 [dependencies]
 image = "0.25"
-native-dialog = {version = "0.9.6"}
+native-dialog = {version = "0.9.7"}
 # rfd = "0.17"
 # timed-map= "1.7"
 
 
 [dependencies.lopdf]
-version = "0.44"
+version = "0.45.0"
 
 [dependencies.slint]
-version = "1.17"
-
+version = "1.18"
 default-features = false
 features = [
     "std",
@@ -34,7 +33,7 @@ features = [
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
-cc = { version = "1.4.6", optional = true }
+cc = { version = "1.4.7", optional = true }
 
 
 [features]
@@ -47,8 +46,8 @@ FileDescription = "小册子生成工具"
 ProductName = "小册子生成工具"
 
 [build-dependencies]
-slint-build = "1.17"
-lucide-slint = "1.8.0"
+slint-build = "1.18"
+lucide-slint = "1.47.0"
 # thunk-rs = { version = "0.3.5", default-features = false , features = ["win7", "lib", "subsystem_windows"] }
 # twill = { version = "0.2", features = ["slint"] }
 

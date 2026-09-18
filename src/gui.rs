@@ -10,8 +10,7 @@ use std::{
 use lopdf::Document;
 use native_dialog::DialogBuilder;
 use slint::{
-    ComponentHandle, Image, Model, SharedPixelBuffer, SharedString, Timer, VecModel, Weak,
-    winit_030::WinitWindowAccessor,
+    ComponentHandle, Model, SharedString, Timer, VecModel, Weak, winit_030::WinitWindowAccessor,
 };
 
 use crate::booklet::{self, BindingRule};
