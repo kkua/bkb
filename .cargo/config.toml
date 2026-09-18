@@ -1,0 +1,10 @@
+# [build]
+# target = "x86_64-win7-windows-gnu"
+
+[target.x86_64-win7-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+# RFC #3874
+# build-std.when = "always"
+
+
+# cargo +nightly build -Z build-std --target x86_64-win7-windows-gnu --release

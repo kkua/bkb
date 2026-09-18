@@ -6,7 +6,7 @@ description = "Booklet Builder"
 
 [dependencies]
 image = "0.25"
-native-dialog = {version = "0.9.6", features = ["windows_dpi_awareness", "windows_visual_styles"]}
+native-dialog = {version = "0.9.6"}
 # rfd = "0.17"
 # timed-map= "1.7"
 
@@ -27,6 +27,11 @@ features = ["backend-winit", "renderer-femtovg-wgpu", "unstable-winit-030"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
+cc = { version = "1.4.6", optional = true }
+
+
+[features]
+win8 = ["dep:cc"]
 
 [package.metadata.winresource]
 # OriginalFilename = "bkb.exe"
@@ -37,6 +42,7 @@ ProductName = "小册子生成工具"
 [build-dependencies]
 slint-build = "1.17"
 lucide-slint = "1.8.0"
+# thunk-rs = { version = "0.3.5", default-features = false , features = ["win7", "lib", "subsystem_windows"] }
 # twill = { version = "0.2", features = ["slint"] }
 
 
